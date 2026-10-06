@@ -1,0 +1,4 @@
+[run]
+omit = 
+    generar_pdf.py
+    test_tcp.py

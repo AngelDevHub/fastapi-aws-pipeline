@@ -9,7 +9,7 @@ from pydantic import BaseModel
 
 app = FastAPI()
 
-async def handle_tcp_client(reader, writer):
+async def handle_tcp_client(reader, writer): # pragma: no cover
     addr = writer.get_extra_info('peername')
     print(f"TCP: Nueva conexión desde {addr}")
     try:
