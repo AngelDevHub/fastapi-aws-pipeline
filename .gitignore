@@ -1,0 +1,39 @@
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Pytest & Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+img_htmlcov.png
+img_pytest.jpg
+
+# SQLite (Comenta esta línea si necesitas subir tu base de datos a GitHub)
+*.db
+*.sqlite3
+
+# LaTeX / PDFs (Archivos temporales generados al compilar el reporte)
+*.aux
+*.log
+*.toc
+*.out
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+
+# IDEs y SO
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

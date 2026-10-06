@@ -1,0 +1,111 @@
+\documentclass[12pt, a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[spanish]{babel}
+\usepackage{ragged2e}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{hyperref}
+\geometry{a4paper, margin=2.54cm}
+
+\begin{document}
+
+\begin{titlepage}
+    \centering
+    \vspace*{2cm}
+    {\Huge \bfseries UNIVERSIDAD TECNOLÓGICA \par}
+    \vspace{1cm}
+    {\Large \bfseries Facultad de Ingeniería \par}
+    \vspace{0.5cm}
+    {\large Ingeniería en Desarrollo de Software \par}
+    \vspace{2cm}
+    {\large \textbf{Materia:} Arquitectura de Software y DevOps \par}
+    \vspace{2cm}
+    {\LARGE \bfseries Pipeline CI/CD Automatizado para API REST con Docker, GitHub Actions y AWS EC2 \par}
+    \vspace{3cm}
+    {\large \textbf{Autor:} [Tu Nombre / Matrícula] \par}
+    \vspace{0.5cm}
+    {\large \textbf{Profesor:} [Nombre del Profesor] \par}
+    \vfill
+    {\large \today \par}
+\end{titlepage}
+
+\newpage
+\justifying
+\tableofcontents
+\newpage
+
+\section{Introducción}
+El desarrollo de software contemporáneo ha superado la época de las entregas manuales monolíticas, evolucionando hacia metodologías ágiles fuertemente respaldadas por la cultura DevOps. Esta transformación cultural y técnica busca unificar el desarrollo (Dev) y las operaciones (Ops), erradicando el clásico problema de "funciona en mi máquina". En el corazón de esta filosofía se encuentran las prácticas de Integración Continua (CI) y Despliegue Continuo (CD), las cuales permiten a los equipos entregar valor de forma rápida, repetible y segura. 
+
+La Integración Continua (CI) es la práctica de fusionar el código de todos los desarrolladores en una rama principal varias veces al día. Para que esto sea efectivo, el código es validado automáticamente mediante suites de pruebas exhaustivas. En este proyecto, se estableció un estándar riguroso de calidad imponiendo un umbral de cobertura de código superior al 70\%. Este mecanismo automatizado actúa como la primera línea de defensa contra regresiones, garantizando que ninguna funcionalidad nueva rompa las características existentes.
+
+Posteriormente, la contenedorización ha surgido como el estándar indiscutible para garantizar la inmutabilidad del software. Utilizando Docker, la aplicación y todas sus dependencias (sistema operativo base, bibliotecas, variables de entorno) se empaquetan en un artefacto estandarizado. Esto elimina las discrepancias entre los entornos de desarrollo, pruebas y producción. 
+
+Finalmente, el Despliegue Continuo (CD) toma el artefacto inmutable (la imagen Docker) y lo transfiere automáticamente a la infraestructura en la nube. Para este proyecto, se aprovisionó una instancia Ubuntu Server en AWS EC2, la cual ofrece elasticidad y control total sobre el host. Mediante GitHub Actions, todo el ciclo de vida del software—desde que el desarrollador hace \textit{push} al repositorio, pasando por la validación de pruebas, la compilación de la imagen, su publicación en Docker Hub, hasta su ejecución en AWS con políticas de reinicio automático—se ejecuta sin intervención humana. El resultado es un oleoducto tecnológico (pipeline) que maximiza la confiabilidad, reduce el \textit{Time-to-Market} y minimiza la posibilidad de error humano.
+
+\section{Desarrollo y Resultados}
+
+\subsection{Arquitectura de la API y Ejecución de Pruebas (>70\% Coverage)}
+Se desarrolló una API REST utilizando el framework Python FastAPI. Para asegurar la calidad, se implementó una suite de pruebas con Pytest y pruebas parametrizadas. El pipeline fallará automáticamente si la cobertura es inferior al 70\%. Como se observa en la ejecución local, el objetivo fue superado con éxito.
+\begin{figure}[H]
+    \centering
+    \caption{Reporte de cobertura de pruebas locales indicando el cumplimiento del umbral del 70\%.}
+    \label{fig:coverage}
+\end{figure}
+
+\subsection{Contenedorización y Construcción de Imagen}
+Se diseñó un \texttt{Dockerfile} de múltiples etapas (Multi-stage) utilizando una imagen base ligera \texttt{slim}. Para aplicar principios de mínimos privilegios (DevSecOps), la aplicación se ejecuta a través de un usuario no-root. El archivo \texttt{.dockerignore} asegura que las dependencias de prueba no se filtren a producción.
+\begin{figure}[H]
+    \centering
+    \caption{Proceso de construcción (build) de la imagen Docker en el entorno local.}
+    \label{fig:docker}
+\end{figure}
+
+\subsection{Ejecución del Pipeline en GitHub Actions (CI/CD)}
+El archivo \texttt{main.yml} orquesta tres \textit{jobs} secuenciales: \texttt{test}, \texttt{build-and-push} y \texttt{deploy}. GitHub Actions actúa como el motor de orquestación, proporcionando retroalimentación visual sobre el éxito o fracaso de cada etapa.
+\begin{figure}[H]
+    \centering
+    \caption{Vista exitosa de los 3 jobs ejecutados secuencialmente en GitHub Actions.}
+    \label{fig:gh_actions}
+\end{figure}
+
+\subsection{Publicación de Artefactos en Docker Hub}
+Una vez que las pruebas pasan exitosamente, la imagen se compila y se sube automáticamente al registro de contenedores (Docker Hub), etiquetándose con el \textit{hash} del commit para trazabilidad y con \texttt{:latest} para el despliegue.
+\begin{figure}[H]
+    \centering
+    \caption{Imagen alojada en Docker Hub con sus respectivos \textit{tags} de versionamiento.}
+    \label{fig:dockerhub}
+\end{figure}
+
+\subsection{Despliegue en AWS EC2 y Respuesta en Vivo}
+Finalmente, GitHub Actions se conecta vía SSH a la instancia EC2, actualiza el contenedor minimizando el tiempo de inactividad (\textit{downtime}) y expone la API en el puerto 80. Se configuraron los Security Groups en AWS para permitir tráfico entrante HTTP.
+\begin{figure}[H]
+    \centering
+    \caption{Respuesta en formato JSON del endpoint público \texttt{/api/health} consultado desde un navegador.}
+    \label{fig:api_live}
+\end{figure}
+
+\section{Conclusión}
+La implementación de este pipeline CI/CD demuestra empíricamente el valor incalculable de la automatización en el ciclo de vida del desarrollo de software. Al eliminar la intervención manual en los procesos de prueba, compilación y despliegue, se redujo drásticamente el margen de error humano, uno de los factores principales de caídas en entornos productivos. El umbral estricto de cobertura del 70\% asegura que el equipo no sacrifique la calidad por la velocidad, manteniendo un código robusto y mantenible a lo largo del tiempo.
+
+Asimismo, la sinergia entre GitHub Actions, Docker y AWS EC2 provee una plataforma de entrega continua altamente escalable y confiable. El desarrollador solo necesita preocuparse por escribir buen código y hacer \textit{push}; el sistema se encarga del resto de manera transparente y segura. Esta arquitectura no solo acelera la entrega de valor, sino que sienta las bases de madurez técnica requeridas para operar en la industria tecnológica moderna.
+
+\renewcommand{\refname}{Fuentes de Información}
+\begin{thebibliography}{9}
+
+\bibitem{humble2010} 
+J. Humble y D. Farley, \textit{Continuous Delivery: Reliable Software Releases through Build, Test, and Deployment Automation}. Addison-Wesley Professional, 2010.
+
+\bibitem{dockerdocs} 
+Docker Inc., ``Docker Documentation'', \textit{docs.docker.com}, 2026. [En línea]. Disponible en: \url{https://docs.docker.com/}. [Accedido: \today].
+
+\bibitem{ghactions} 
+GitHub, ``GitHub Actions Documentation'', \textit{docs.github.com}, 2026. [En línea]. Disponible en: \url{https://docs.github.com/en/actions}. [Accedido: \today].
+
+\bibitem{awsec2} 
+Amazon Web Services, ``Amazon EC2 Documentation'', \textit{aws.amazon.com}, 2026. [En línea]. Disponible en: \url{https://docs.aws.amazon.com/ec2/}. [Accedido: \today].
+
+\end{thebibliography}
+
+\end{document}

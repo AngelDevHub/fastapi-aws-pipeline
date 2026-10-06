@@ -1,0 +1,71 @@
+name: Deploy to Docker Hub + EC2
+
+on:
+  push:
+    branches: ["main"]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.9"
+          cache: 'pip'
+          
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-cov httpx fastapi pydantic uvicorn
+          
+      - name: Run all tests
+        run: pytest
+
+  build-and-push:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/mi-api:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/mi-api:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy-ec2:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Desplegar en EC2 vía SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/mi-api:latest
+            docker stop mi-api-container || true
+            docker rm mi-api-container || true
+            docker run -d --name mi-api-container -p 80:80 -e ENV=production ${{ secrets.DOCKERHUB_USERNAME }}/mi-api:latest
