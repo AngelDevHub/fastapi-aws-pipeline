@@ -3,7 +3,7 @@ import json
 import re
 import os
 from datetime import datetime
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, Query
 from database import init_db, get_db, backup_db, empty_db
 from pydantic import BaseModel
 
@@ -204,3 +204,134 @@ def healthcheck():
         "message": "¡Hola, Profesor! El pipeline CI/CD funciona correctamente en AWS EC2.",
         "environment": os.getenv("ENV", "development")
     }
+
+# 12. GET author by ID
+@app.get("/api/authors/{author_id}")
+def get_author(author_id: int):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM authors WHERE id = ?", (author_id,))
+    row = cursor.fetchone()
+    conn.close()
+    if not row:
+        raise HTTPException(status_code=404, detail="Author not found")
+    return format_response([dict(row)])
+
+# 13. PUT author by ID
+@app.put("/api/authors/{author_id}")
+def update_author(author_id: int, author: AuthorInput):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id FROM authors WHERE id = ?", (author_id,))
+    if not cursor.fetchone():
+        conn.close()
+        raise HTTPException(status_code=404, detail="Author not found")
+    cursor.execute("UPDATE authors SET name = ? WHERE id = ?", (author.name, author_id))
+    conn.commit()
+    conn.close()
+    return format_response([{"message": "Author updated"}])
+
+# 14. DELETE author by ID
+@app.delete("/api/authors/{author_id}")
+def delete_author(author_id: int):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id FROM authors WHERE id = ?", (author_id,))
+    if not cursor.fetchone():
+        conn.close()
+        raise HTTPException(status_code=404, detail="Author not found")
+    cursor.execute("DELETE FROM authors WHERE id = ?", (author_id,))
+    conn.commit()
+    conn.close()
+    return format_response([{"message": "Author deleted"}])
+
+# 15. GET search books by title query
+@app.get("/api/books/search")
+def search_books(q: str = Query(..., description="Término de búsqueda")):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM books WHERE title LIKE ?", (f"%{q}%",))
+    rows = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    return format_response(rows)
+
+# 16. GET book by ID
+@app.get("/api/books/{book_id}")
+def get_book(book_id: int):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM books WHERE id = ?", (book_id,))
+    row = cursor.fetchone()
+    conn.close()
+    if not row:
+        raise HTTPException(status_code=404, detail="Book not found")
+    return format_response([dict(row)])
+
+# 16. PUT book by ID
+@app.put("/api/books/{book_id}")
+def update_book(book_id: int, book: BookInput):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id FROM books WHERE id = ?", (book_id,))
+    if not cursor.fetchone():
+        conn.close()
+        raise HTTPException(status_code=404, detail="Book not found")
+    cursor.execute("UPDATE books SET title = ?, author_id = ? WHERE id = ?", (book.title, book.author_id, book_id))
+    conn.commit()
+    conn.close()
+    return format_response([{"message": "Book updated"}])
+
+# 17. GET books by author ID
+@app.get("/api/authors/{author_id}/books")
+def get_books_by_author(author_id: int):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM books WHERE author_id = ?", (author_id,))
+    rows = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    return format_response(rows)
+
+# 18. GET borrower by ID
+@app.get("/api/borrowers/{borrower_id}")
+def get_borrower(borrower_id: int):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM borrowers WHERE id = ?", (borrower_id,))
+    row = cursor.fetchone()
+    conn.close()
+    if not row:
+        raise HTTPException(status_code=404, detail="Borrower not found")
+    return format_response([dict(row)])
+
+# 19. PUT borrower by ID
+@app.put("/api/borrowers/{borrower_id}")
+def update_borrower(borrower_id: int, borrower: BorrowerInput):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id FROM borrowers WHERE id = ?", (borrower_id,))
+    if not cursor.fetchone():
+        conn.close()
+        raise HTTPException(status_code=404, detail="Borrower not found")
+    cursor.execute("UPDATE borrowers SET name = ?, book_id = ? WHERE id = ?", (borrower.name, borrower.book_id, borrower_id))
+    conn.commit()
+    conn.close()
+    return format_response([{"message": "Borrower updated"}])
+
+
+# 21. GET database stats
+@app.get("/api/stats")
+def get_stats():
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT COUNT(*) FROM authors")
+    total_authors = cursor.fetchone()[0]
+    cursor.execute("SELECT COUNT(*) FROM books")
+    total_books = cursor.fetchone()[0]
+    cursor.execute("SELECT COUNT(*) FROM borrowers")
+    total_borrowers = cursor.fetchone()[0]
+    conn.close()
+    return format_response([{
+        "total_authors": total_authors,
+        "total_books": total_books,
+        "total_borrowers": total_borrowers
+    }])

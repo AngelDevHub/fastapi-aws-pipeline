@@ -1,4 +1,4 @@
 [run]
 omit = 
-    generar_pdf.py
+    docs/*
     test_tcp.py
