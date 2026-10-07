@@ -201,7 +201,7 @@ def healthcheck():
         "status": "ok",
         "version": "1.0.0",
         "timestamp": datetime.utcnow().isoformat(),
-        "message": "¡Hola, Profesor! El pipeline CI/CD funciona correctamente en AWS EC2.",
+        "message": "Revicion",
         "environment": os.getenv("ENV", "development")
     }
 
@@ -318,7 +318,7 @@ def update_borrower(borrower_id: int, borrower: BorrowerInput):
     return format_response([{"message": "Borrower updated"}])
 
 
-# 21. GET database stats
+# 20. GET database stats
 @app.get("/api/stats")
 def get_stats():
     conn = get_db()
